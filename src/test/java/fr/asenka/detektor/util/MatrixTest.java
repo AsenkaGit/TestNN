@@ -40,6 +40,27 @@ class MatrixTest {
 	}
 	
 	@Test
+	void testAdd() {
+		Matrix m1 = new Matrix("1 1 1 ; 1 1 1");
+		Matrix m2 = new Matrix("0 1 0 ; 2 2 2");
+		Matrix expected = new Matrix("1 2 1 ; 3 3 3");
+		
+		assertEquals(expected, m1.add(m2));
+		assertEquals(expected, m2.add(m1));
+	}
+	
+	@Test
+	void testSubtract() {
+		Matrix m1 = new Matrix("1 1 1 ; 1 1 1");
+		Matrix m2 = new Matrix("0 1 0 ; 2 2 2");
+		Matrix expectedM1sM2 = new Matrix("1 0 1 ; -1 -1 -1");
+		Matrix expectedM2sM1 = new Matrix("-1 0 -1 ; 1 1 1");
+		
+		assertEquals(expectedM1sM2, m1.subtract(m2));
+		assertEquals(expectedM2sM1, m2.subtract(m1));
+	}
+	
+	@Test
 	void testMultiply() {
 		
 		Matrix m1 = new Matrix("1 2 3 ; 4 5 6");
@@ -49,6 +70,15 @@ class MatrixTest {
 		
 		assertEquals(expectedM1xM2, m1.multiply(m2));
 		assertEquals(expectedM2xM1, m2.multiply(m1));
+	}
+	
+	@Test
+	void testGetSubMatrix() {
+		
+		Matrix m = new Matrix("1 2 3 4 5 ; 1 2 3 4 5 ; 1 2 3 4 5 ; 1 2 3 4 5");
+		Matrix expected = new Matrix("2 3 4 5 ; 2 3 4 5 ; 2 3 4 5");
+
+		assertEquals(expected, m.getSubMatrix(1, 1));
 	}
 
 }
