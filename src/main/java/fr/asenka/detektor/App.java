@@ -11,7 +11,7 @@ public class App {
 
 		Matrix m = new Matrix("1 1 1 ; 1 1 1 ; 1 1 1");
 		
-		Matrix p = m.concatH(new Matrix("1 ; 2 ; 3"));
+		Matrix p = m.concatHorizontaly(new Matrix("1 ; 2 ; 3"));
 		
 		System.out.println(m);
 		System.out.println(p);

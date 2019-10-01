@@ -10,14 +10,18 @@ import org.apache.commons.math3.linear.RealMatrix;
 
 public class Matrix {
 
-	private RealMatrix matrix;
+	private final RealMatrix matrix;
+	private final int rows;
+	private final int columns;
 
 	public Matrix(RealMatrix matrix) {
 		this.matrix = matrix;
+		this.rows = matrix.getRowDimension();
+		this.columns = matrix.getColumnDimension();
 	}
 
 	public Matrix(double[][] data) {
-		this.matrix = createRealMatrix(data);
+		this(createRealMatrix(data));
 	}
 
 	public Matrix(int[] sizes) {
@@ -25,7 +29,7 @@ public class Matrix {
 	}
 
 	public Matrix(int rows, int columns) {
-		this.matrix = createRealMatrix(rows, columns);
+		this(createRealMatrix(rows, columns));
 	}
 
 	public Matrix(int size) {
@@ -47,9 +51,8 @@ public class Matrix {
 	public Matrix(String content) {
 
 		String[] contentRows = content.split(";");
-		int rows = contentRows.length;
-		int columns = contentRows[0].split(" ").length;
-
+		this.rows = contentRows.length;
+		this.columns = contentRows[0].split(" ").length;
 		this.matrix = createRealMatrix(rows, columns);
 
 		for (int r = 0; r < rows; r++) {
@@ -92,9 +95,6 @@ public class Matrix {
 
 	public Matrix multiplyEachEntry(Matrix other) {
 
-		int rows = matrix.getRowDimension();
-		int columns = matrix.getColumnDimension();
-
 		if (rows != other.getRows() || columns != other.getColumns())
 			throw new IllegalArgumentException(
 					" this.rows=" + rows + 
@@ -112,9 +112,6 @@ public class Matrix {
 	}
 	
 	public Matrix divideEachEntry(Matrix other) {
-
-		int rows = matrix.getRowDimension();
-		int columns = matrix.getColumnDimension();
 
 		if (rows != other.getRows() || columns != other.getColumns())
 			throw new IllegalArgumentException(
@@ -160,55 +157,83 @@ public class Matrix {
 		return new int[] { matrix.getRowDimension(), matrix.getColumnDimension() };
 	}
 	
-	public Matrix concatV(Matrix other) {
+	public Matrix concatVerticaly(Matrix other) {
 		
-		int rows = matrix.getRowDimension();
-		int columns = matrix.getColumnDimension();
-		int otherRows = other.matrix.getRowDimension();
-		int otherColumns = other.matrix.getColumnDimension();
+		if (columns != other.columns)
+			throw new DimensionMismatchException(other.columns, columns);
 		
-		if (columns != otherColumns)
-			throw new DimensionMismatchException(otherColumns, columns);
-		
-		Matrix result = new Matrix(rows + otherRows, columns);
+		Matrix result = new Matrix(rows + other.rows, columns);
 		
 		for (int r = 0; r < rows; r++)
 			for (int c = 0; c < columns; c++)
 				result.matrix.setEntry(r, c, this.matrix.getEntry(r, c));
 		
-		for (int r = 0; r < otherRows; r++)
-			for (int c = 0; c < otherColumns; c++)
+		for (int r = 0; r < other.rows; r++)
+			for (int c = 0; c < other.columns; c++)
 				result.matrix.setEntry(rows + r, c, other.matrix.getEntry(r, c));
 		
 		return result;
 	}
 	
-	public Matrix concatH(Matrix other) {
+	public Matrix concatHorizontaly(Matrix other) {
 		
-		int rows = matrix.getRowDimension();
-		int columns = matrix.getColumnDimension();
-		int otherRows = other.matrix.getRowDimension();
-		int otherColumns = other.matrix.getColumnDimension();
+		if (rows != other.rows)
+			throw new DimensionMismatchException(other.rows, rows);
 		
-		if (rows != otherRows)
-			throw new DimensionMismatchException(otherRows, rows);
-		
-		Matrix result = new Matrix(rows, columns + otherColumns);
+		Matrix result = new Matrix(rows, columns + other.columns);
 		
 		for (int r = 0; r < rows; r++)
 			for (int c = 0; c < columns; c++)
 				result.matrix.setEntry(r, c, this.matrix.getEntry(r, c));
 		
-		for (int r = 0; r < otherRows; r++)
-			for (int c = 0; c < otherColumns; c++)
+		for (int r = 0; r < other.rows; r++)
+			for (int c = 0; c < other.columns; c++)
 				result.matrix.setEntry(r, columns + c, other.matrix.getEntry(r, c));
 		
 		return result;
 	}
 	
+	public Matrix getSubMatrix(int startRow, int startColumn) {
+		return new Matrix(this.matrix.getSubMatrix(startRow, rows - 1, startColumn, columns - 1));
+	}
+	
+	public Matrix getSubMatrix(int startRow, int endRow, int startColumn, int endColumn) {
+		return new Matrix(this.matrix.getSubMatrix(startRow, endRow, startColumn, endColumn));
+	}
+	
+	public double get(int row, int column) {
+		return this.matrix.getEntry(row, column);
+	}
+	
+	public Matrix getRow(int row) {
+		return new Matrix(this.matrix.getRowMatrix(row));
+	}
+	
+	public Matrix getColumn(int column) {
+		return new Matrix(this.matrix.getColumnMatrix(column));
+	}
+	
+	public void set(int row, int column, double value) {
+		this.matrix.setEntry(row, column, value);
+	}
+	
+	public void setRow(int row, double[] array) {
+		this.matrix.setRow(row, array);
+	}
+	
+	public void setRow(int row, Matrix rowMatrix) {
+		this.matrix.setRowMatrix(row, rowMatrix.matrix);
+	}
+	
+	public void setColumn(int column, double[] array) {
+		this.matrix.setColumn(column, array);
+	}
+	
+	public void setColumn(int column, Matrix columnMatrix) {	
+		this.matrix.setColumnMatrix(column, columnMatrix.matrix);
+	}
+	
 	public void setRowWithValue(int row, double value) {
-		
-		int columns = matrix.getColumnDimension();
 		
 		for (int c = 0; c < columns; c++)
 			this.matrix.setEntry(row, c, value);
@@ -216,17 +241,21 @@ public class Matrix {
 	
 	public void setColumnWithValue(int column, double value) {
 		
-		int rows = matrix.getRowDimension();
-		
 		for (int r = 0; r < rows; r++)
 			this.matrix.setEntry(r, column, value);
+	}
+	
+	public double[][] getRawData() {
+		return this.matrix.getData();
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + columns;
 		result = prime * result + ((matrix == null) ? 0 : matrix.hashCode());
+		result = prime * result + rows;
 		return result;
 	}
 
@@ -239,10 +268,14 @@ public class Matrix {
 		if (getClass() != obj.getClass())
 			return false;
 		Matrix other = (Matrix) obj;
+		if (columns != other.columns)
+			return false;
 		if (matrix == null) {
 			if (other.matrix != null)
 				return false;
 		} else if (!matrix.equals(other.matrix))
+			return false;
+		if (rows != other.rows)
 			return false;
 		return true;
 	}
@@ -251,12 +284,11 @@ public class Matrix {
 	public String toString() {
 
 		StringBuilder builder = new StringBuilder();
-		int rows = matrix.getRowDimension();
-		int columns = matrix.getColumnDimension();
 
 		builder.append("[" + rows + ";" + columns + "]\n");
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < columns; c++) {
+				builder.append('\t');
 				builder.append(matrix.getEntry(r, c));
 				builder.append('\t');
 			}
@@ -265,23 +297,23 @@ public class Matrix {
 		return builder.toString();
 	}
 
-	/**
-	 * 
-	 * @param rows
-	 * @param columns
-	 * @param min
-	 * @param max
-	 * @return
-	 */
 	public static Matrix random(int rows, int columns, double min, double max) {
 
 		Random rng = new Random();
-		Matrix m = new Matrix(rows, columns);
+		Matrix result = new Matrix(rows, columns);
 
 		for (int r = 0; r < rows; r++)
 			for (int c = 0; c < columns; c++)
-				m.matrix.setEntry(r, c, min + (max - min) * rng.nextDouble());
+				result.matrix.setEntry(r, c, min + (max - min) * rng.nextDouble());
 
-		return m;
+		return result;
+	}
+	
+	public static Matrix zeros(int rows, int columns) {
+		return new Matrix(rows, columns, 0d);
+	}
+	
+	public static Matrix ones(int rows, int columns) {
+		return new Matrix(rows, columns, 1d);
 	}
 }
