@@ -2,13 +2,21 @@ package fr.asenka.detektor.util;
 
 import static org.apache.commons.math3.linear.MatrixUtils.createRealMatrix;
 
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.Random;
+import java.util.Spliterators;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.stat.StatUtils;
 
-public class Matrix {
+public class Matrix implements Iterable<Double> {
 
 	private final RealMatrix matrix;
 	private final int rows;
@@ -61,13 +69,17 @@ public class Matrix {
 				this.matrix.setEntry(r, c, Double.parseDouble(numbers[c]));
 		}
 	}
+	
+	public boolean isScalar() {
+		return rows == 1 && columns == 1;
+	}
 
 	public Matrix copy() {
 		return new Matrix(this.matrix.copy());
 	}
 
 	public Matrix add(Matrix other) {
-		MatrixUtils.checkSubtractionCompatible(this.matrix, other.matrix);
+		MatrixUtils.checkAdditionCompatible(this.matrix, other.matrix);
 		return new Matrix(this.matrix.add(other.matrix));
 	}
 
@@ -95,12 +107,10 @@ public class Matrix {
 
 	public Matrix multiplyEachEntry(Matrix other) {
 
-		if (rows != other.getRows() || columns != other.getColumns())
-			throw new IllegalArgumentException(
-					" this.rows=" + rows + 
-					" this.columns=" + columns + 
-					" other.rows="+ other.getRows() + 
-					" other.columns=" + other.getColumns());
+		if (rows != other.rows)
+			throw new DimensionMismatchException(other.rows, rows);
+		else if (columns != other.columns)
+			throw new DimensionMismatchException(other.columns, columns);
 
 		Matrix result = new Matrix(rows, columns);
 
@@ -112,13 +122,11 @@ public class Matrix {
 	}
 	
 	public Matrix divideEachEntry(Matrix other) {
-
-		if (rows != other.getRows() || columns != other.getColumns())
-			throw new IllegalArgumentException(
-					" this.rows=" + rows + 
-					" this.columns=" + columns + 
-					" other.rows="+ other.getRows() + 
-					" other.columns=" + other.getColumns());
+	
+		if (rows != other.rows)
+			throw new DimensionMismatchException(other.rows, rows);
+		else if (columns != other.columns)
+			throw new DimensionMismatchException(other.columns, columns);
 
 		Matrix result = new Matrix(rows, columns);
 
@@ -144,17 +152,109 @@ public class Matrix {
 	public double trace() {
 		return this.matrix.getTrace();
 	}
-
-	public int getRows() {
-		return matrix.getRowDimension();
+	
+	public double norm() {
+		return this.matrix.getNorm();
 	}
 
-	public int getColumns() {
-		return matrix.getColumnDimension();
+	public long size() {
+		return rows * columns;
 	}
-
-	public int[] sizes() {
-		return new int[] { matrix.getRowDimension(), matrix.getColumnDimension() };
+	
+	public int rows() {
+		return rows;
+	}
+	
+	public int columns() {
+		return columns;
+	}
+	
+	public double max() {
+		return stream().max((a, b) -> Double.compare(a, b)).get();
+	}
+	
+	public double min() {
+		return stream().min((a, b) -> Double.compare(a, b)).get();
+	}
+	
+	public Matrix maxByRow() {
+		
+		Matrix result = new Matrix(rows, 1);
+		
+		for(int r = 0; r < rows; r++)
+			result.set(r, 0, getRow(r).max());
+		
+		return result;
+	}
+	
+	public Matrix indexMaxByRow() {
+		
+		Matrix result = new Matrix(rows, 1);
+		
+		for(int r = 0; r < rows; r++)
+			result.set(r, 0, indexMax(matrix.getRow(r)));
+			
+		return result;
+	}
+	
+	public Matrix minByRow() {
+		
+		Matrix result = new Matrix(rows, 1);
+		
+		for(int r = 0; r < rows; r++)
+			result.set(r, 0, getRow(r).min());
+		
+		return result;
+	}
+	
+	public Matrix indexMinByRow() {
+		
+		Matrix result = new Matrix(rows, 1);
+		
+		for(int r = 0; r < rows; r++)
+			result.set(r, 0, indexMin(matrix.getRow(r)));
+			
+		return result;
+	}
+	
+	public Matrix maxByColumn() {
+		
+		Matrix result = new Matrix(1, columns);
+		
+		for(int c = 0; c < columns; c++)
+			result.set(0, c, getColumn(c).max());
+		
+		return result;
+	}
+	
+	public Matrix indexMaxByColumn() {
+		
+		Matrix result = new Matrix(1, columns);
+		
+		for(int c = 0; c < columns; c++)
+			result.set(0, c, indexMax(matrix.getColumn(c)));
+		
+		return result;
+	}
+	
+	public Matrix minByColumn() {
+		
+		Matrix result = new Matrix(1, columns);
+		
+		for(int c = 0; c < columns; c++)
+			result.set(0, c, getColumn(c).min());
+		
+		return result;
+	}
+	
+	public Matrix indexMinByColumn() {
+		
+		Matrix result = new Matrix(1, columns);
+		
+		for(int c = 0; c < columns; c++)
+			result.set(0, c, indexMin(matrix.getColumn(c)));
+		
+		return result;
 	}
 	
 	public Matrix concatVerticaly(Matrix other) {
@@ -248,35 +348,71 @@ public class Matrix {
 	public double[][] getRawData() {
 		return this.matrix.getData();
 	}
+	
+	public Stream<Double> stream() {
+		return StreamSupport.stream(Spliterators.spliterator(iterator(), size(), 0), false);
+	}
+	
+	public void forEachRow(Consumer<Matrix> action) {
+        Objects.requireNonNull(action);
+        for (int r = 0; r < rows; r++) 
+            action.accept(getRow(r));
+    }
+	
+	public void forEachColumn(Consumer<Matrix> action) {
+        Objects.requireNonNull(action);
+        for (int c = 0; c < columns; c++) 
+            action.accept(getColumn(c));
+    }
+	
+	public Matrix applyOnEach(Function<Double, Double> function) {
+		
+		Matrix result = new Matrix(rows, columns);
+		
+		for (int r = 0; r < rows; r++) 
+			for (int c = 0; c < columns; c++)
+				result.set(r, c, function.apply(matrix.getEntry(r, c)));
+		
+		return result;
+	}
+
+	@Override
+	public Iterator<Double> iterator() {
+		return new Iterator<Double>() {
+
+			private long index = 0l;
+			
+			@Override
+			public boolean hasNext() {
+				return index < rows * columns;
+			}
+
+			@Override
+			public Double next() { 
+				return matrix.getEntry((int) (index / columns), (int) (index++ % columns));
+			}
+		};
+	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + columns;
 		result = prime * result + ((matrix == null) ? 0 : matrix.hashCode());
 		result = prime * result + rows;
+		result = prime * result + columns;
 		return result;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
 		Matrix other = (Matrix) obj;
-		if (columns != other.columns)
-			return false;
-		if (matrix == null) {
-			if (other.matrix != null)
-				return false;
-		} else if (!matrix.equals(other.matrix))
-			return false;
-		if (rows != other.rows)
-			return false;
+		if (matrix == null) if (other.matrix != null) return false; else if (!matrix.equals(other.matrix)) return false;
+		if (rows != other.rows) return false;
+		if (columns != other.columns) return false;
 		return true;
 	}
 
@@ -297,7 +433,7 @@ public class Matrix {
 		return builder.toString();
 	}
 
-	public static Matrix random(int rows, int columns, double min, double max) {
+	public static final Matrix random(int rows, int columns, double min, double max) {
 
 		Random rng = new Random();
 		Matrix result = new Matrix(rows, columns);
@@ -305,15 +441,67 @@ public class Matrix {
 		for (int r = 0; r < rows; r++)
 			for (int c = 0; c < columns; c++)
 				result.matrix.setEntry(r, c, min + (max - min) * rng.nextDouble());
-
+		
 		return result;
 	}
 	
-	public static Matrix zeros(int rows, int columns) {
+	public static final Matrix zeros(int rows, int columns) {
 		return new Matrix(rows, columns, 0d);
 	}
 	
-	public static Matrix ones(int rows, int columns) {
+	public static final Matrix ones(int rows, int columns) {
 		return new Matrix(rows, columns, 1d);
+	}
+	
+	public static final Matrix sum(Matrix m) {
+		return m.rows == 1 ? sumByRow(m) : sumByColumn(m);
+	}
+	
+	public static final Matrix sumByColumn(Matrix m) {
+		
+		Matrix result = new Matrix(1, m.columns);
+		
+		for (int c = 0; c < m.columns; c++)
+			result.set(0, c, StatUtils.sum(m.matrix.getColumn(c)));
+		
+		return result;
+	}
+	
+	public static final Matrix sumByRow(Matrix m) {
+		
+		Matrix result = new Matrix(m.rows, 1);
+		
+		for (int r = 0; r < m.rows; r++)
+			result.set(r, 0, StatUtils.sum(m.matrix.getRow(r)));
+		
+		return result;
+	}
+	
+	public static final Matrix log(Matrix m) {
+		return m.applyOnEach(d -> Math.log(d));
+	}
+	
+	private static final int indexMax(double[] array) {
+		double largest = array[0];
+		int index = 0;
+		
+		for (int i = 1; i < array.length; i++)
+			if (array[i] >= largest) {
+				largest = array[i];
+				index = i;
+			}
+		return index;
+	}
+	
+	private static final int indexMin(double[] array) {
+		double lowest = array[0];
+		int index = 0;
+		
+		for (int i = 1; i < array.length; i++)
+			if (array[i] < lowest) {
+				lowest = array[i];
+				index = i;
+			}
+		return index;
 	}
 }

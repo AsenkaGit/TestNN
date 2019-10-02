@@ -10,12 +10,11 @@ public class App {
 	public static void main(String[] args) {
 
 		Matrix m = new Matrix("1 1 1 ; 1 1 1 ; 1 1 1");
-		
-		Matrix p = m.concatHorizontaly(new Matrix("1 ; 2 ; 3"));
+		Matrix p = new Matrix("1 ; 2 ; 3");
 		
 		System.out.println(m);
 		System.out.println(p);
-		
+		System.out.println(Matrix.zeros(3, 1).concatHorizontaly(m).concatHorizontaly(p));
 		
 	}
 }

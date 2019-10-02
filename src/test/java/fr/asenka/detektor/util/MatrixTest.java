@@ -1,20 +1,25 @@
 package fr.asenka.detektor.util;
 
+
+import static fr.asenka.detektor.util.Matrix.sum;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import org.junit.jupiter.api.Test;
 
 class MatrixTest {
 	
-	private final double DELTA = 0.0000001d;
+	private final double DELTA = 0.000000001d;
+
+	private int index;
 
 	@Test
 	void testNewMatrix() {
 		
 		Matrix m = new Matrix("1 2 3 ; 4 5 6 ; 7 8 9");
 		
-		assertEquals(3, m.getRows());
-		assertEquals(3, m.getColumns());
+		assertEquals(3, m.rows());
+		assertEquals(3, m.columns());
 		assertEquals(1d, m.get(0, 0), DELTA);
 		assertEquals(2d, m.get(0, 1), DELTA);
 		assertEquals(3d, m.get(0, 2), DELTA);
@@ -28,6 +33,16 @@ class MatrixTest {
 		Matrix p = new Matrix(new double[][] {{1d, 2d, 3d}, {4d, 5d, 6d}, {7d, 8d, 9d}});
 		
 		assertEquals(p, m);
+	}
+	
+	@Test
+	void testCopy() {
+		Matrix m = new Matrix("1 2 3 ; 4 5 6 ; 7 8 9");
+		Matrix c = m.copy();
+		
+		assertEquals(m, c);
+		assertNotSame(m, c);
+		assertNotSame(m.getRawData(), c.getRawData());
 	}
 	
 	@Test
@@ -73,6 +88,44 @@ class MatrixTest {
 	}
 	
 	@Test
+	void testScalarAdd() {
+		
+		Matrix m = new Matrix("0 1 0 ; 2 2 2");
+		Matrix expected = new Matrix("10 11 10 ; 12 12 12");
+		
+		assertEquals(expected, m.add(10d));
+	}
+
+	@Test
+	void testScalarSubtract() {
+		
+		Matrix m = new Matrix("10 11 10 ; 12 12 12");
+		Matrix expected = new Matrix("0 1 0 ; 2 2 2");
+		
+		assertEquals(expected, m.subtract(10d));
+	}
+
+	@Test
+	void testScalarMultiply() {
+		
+		Matrix m = new Matrix("0 1 0 ; 2 2 2");
+		Matrix expected = new Matrix("0 10 0 ; 20 20 20");
+		
+		assertEquals(expected, m.multiply(10d));
+	}
+	
+	@Test
+	void testMultiplyEachEntry() {
+		
+		Matrix m1 = new Matrix("1 1 1 ; 2 2 2");
+		Matrix m2 = new Matrix("0 1 3 ; 0 1 3");
+		Matrix expected = new Matrix("0 1 3 ; 0 2 6");
+		
+		assertEquals(expected, m1.multiplyEachEntry(m2));
+		assertEquals(expected, m2.multiplyEachEntry(m1));
+	}
+	
+	@Test
 	void testGetSubMatrix() {
 		
 		Matrix m = new Matrix("1 2 3 4 5 ; 1 2 3 4 5 ; 1 2 3 4 5 ; 1 2 3 4 5");
@@ -80,5 +133,106 @@ class MatrixTest {
 
 		assertEquals(expected, m.getSubMatrix(1, 1));
 	}
+	
+	@Test
+	void testMin() {
+		
+		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
+		
+		assertEquals(0, m.min());
+		assertEquals(new Matrix("0 0 0 1 0"), m.minByColumn());
+		assertEquals(new Matrix("1 ; 0 ; 10"), m.minByRow());
+	}
+	
+	@Test
+	void testIndexMin() {
+		
+		Matrix m = new Matrix("23 1 8 ; 0 1 0 ; 1 9 51");
+		
+		assertEquals(new Matrix("1 0 1"), m.indexMinByColumn());
+		assertEquals(new Matrix("1;0;0"), m.indexMinByRow());
+	}
+	
+	@Test
+	void testMax() {
+		
+		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
+		
+		assertEquals(14, m.max());
+		assertEquals(new Matrix("10 11 12 13 14"), m.minByColumn());
+		assertEquals(new Matrix("5 ; 1 ; 14"), m.minByRow());
+	}
+	
+	@Test
+	void testIndexMax() {
+		
+		Matrix m = new Matrix("23 1 8 ; 0 1 0 ; 1 9 51");
+		
+		assertEquals(new Matrix("0 2 2"), m.indexMaxByColumn());
+		assertEquals(new Matrix("0;1;2"), m.indexMaxByRow());
+	}
+	
+	@Test
+	void testApplyOnEach() {
+		
+		Matrix m = new Matrix("1 1 ; 2 2");
+		Matrix expected = new Matrix("2.25 2.25 ; 4.25 4.25");
+		
+		assertEquals(expected, m.applyOnEach(d -> d * 2 + 0.25));
+	}
+	
+	@Test
+	void testStream() {
+		
+		Matrix m = new Matrix("1 2 3 4 5 ; 6 7 8 9 10");
+		
+		assertEquals(m.size(), m.stream().count());
+		assertEquals(1, m.stream().min((a, b) -> Double.compare(a, b)).get());
+		assertEquals(10, m.stream().max((a, b) -> Double.compare(a, b)).get());
+		assertEquals(m.min(), m.stream().min((a, b) -> Double.compare(a, b)).get());
+		assertEquals(m.max(), m.stream().max((a, b) -> Double.compare(a, b)).get());
+	}
+	
+	@Test
+	void testForEachColumn() {
+		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
+		index = 0;
+		m.forEachColumn(c -> assertEquals(m.getColumn(index++), c));
+	}
+	
+	@Test
+	void testForEachRow() {
+		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
+		index = 0;
+		m.forEachRow(r -> assertEquals(m.getRow(index++), r));
+	}
+	
+	@Test
+	void testSum() {
+		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
+		
+		System.out.println(m);
+		System.out.println(sum(m));
+		System.out.println(sum(sum(m)));
+	}
 
+	@Test
+	void testIterator() {
+		
+		Matrix m = new Matrix("1 2 3 4 5 ; 6 7 8 9 10");
+		double num = 1d;
+		
+		for (Double e : m) 
+			assertEquals(num++, e);
+	}
+	
+	@Test
+	void testRandom() {
+		
+		Matrix random = Matrix.random(5, 4, 0d, 1d);
+		
+		assertEquals(5, random.rows());
+		assertEquals(4, random.columns());
+		random.forEach(e -> assertEquals(0.5d, e, 0.5d));
+	}
 }
