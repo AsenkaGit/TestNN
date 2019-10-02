@@ -1,9 +1,12 @@
 package fr.asenka.detektor.util;
 
 
+import static fr.asenka.detektor.util.Matrix.binaryMatrix;
 import static fr.asenka.detektor.util.Matrix.sum;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +55,25 @@ class MatrixTest {
 		Matrix expected = new Matrix("1 4 ; 2 5 ; 3 6");
 		
 		assertEquals(expected, m.transpose());
+	}
+	
+	@Test
+	void testNegative() {
+		
+		Matrix m = new Matrix("1 2 3 ; 4 5 6");
+		Matrix expected = new Matrix("-1 -2 -3 ; -4 -5 -6");
+		
+		assertEquals(expected, m.negative());
+		assertEquals(m.negative(), m.multiply(-1d));
+	}
+	
+	@Test
+	void testFlat() {
+		
+		Matrix m = new Matrix("1 2 3 ; 4 5 6");
+		
+//		assertEquals(new Matrix("1 2 3 4 5 6"), m.flatHorizontaly());
+		assertEquals(new Matrix("1;2;3;4;5;6"), m.flatColumn());
 	}
 	
 	@Test
@@ -159,8 +181,8 @@ class MatrixTest {
 		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
 		
 		assertEquals(14, m.max());
-		assertEquals(new Matrix("10 11 12 13 14"), m.minByColumn());
-		assertEquals(new Matrix("5 ; 1 ; 14"), m.minByRow());
+		assertEquals(new Matrix("10 11 12 13 14"), m.maxByColumn());
+		assertEquals(new Matrix("5 ; 1 ; 14"), m.maxByRow());	
 	}
 	
 	@Test
@@ -179,6 +201,20 @@ class MatrixTest {
 		Matrix expected = new Matrix("2.25 2.25 ; 4.25 4.25");
 		
 		assertEquals(expected, m.applyOnEach(d -> d * 2 + 0.25));
+	}
+	
+	@Test
+	void testBinaryMatrix() {
+		
+		Matrix rowMatrix = new Matrix("0 1 4 2 3 1");
+		Matrix expected = new  Matrix(
+				  "1 0 0 0 0 0;"
+				+ "0 1 0 0 0 1;"
+				+ "0 0 0 1 0 0;"
+				+ "0 0 0 0 1 0;"
+				+ "0 0 1 0 0 0"
+		);
+		assertEquals(expected, binaryMatrix(rowMatrix, 5));
 	}
 	
 	@Test
@@ -211,9 +247,10 @@ class MatrixTest {
 	void testSum() {
 		Matrix m = new Matrix("1 2 3 4 5 ; 0 0 0 1 0 ; 10 11 12 13 14");
 		
-		System.out.println(m);
-		System.out.println(sum(m));
-		System.out.println(sum(sum(m)));
+		assertEquals(new Matrix("11 13 15 18 19"), sum(m));
+		assertTrue(sum(m).isRow());
+		assertEquals(new Matrix("76"), sum(sum(m)));
+		assertTrue(sum(sum(m)).isScalar());
 	}
 
 	@Test
@@ -235,4 +272,15 @@ class MatrixTest {
 		assertEquals(4, random.columns());
 		random.forEach(e -> assertEquals(0.5d, e, 0.5d));
 	}
+	
+	 @Test
+	 void testEquals() {
+		 
+		 Matrix m1 = new Matrix("1 2 3 4 5 ; 6.00 7 8 9 10");
+		 Matrix m2 = new Matrix("1 2 3 4 5 ; 6.01 7 8 9 10");
+		 
+		 assertNotEquals(m1, m2);
+		 assertEquals(m1, m1.copy());
+		 assertEquals(m2, m2.copy());
+	 }
 }

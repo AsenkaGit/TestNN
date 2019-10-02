@@ -31,6 +31,14 @@ public class Matrix implements Iterable<Double> {
 	public Matrix(double[][] data) {
 		this(createRealMatrix(data));
 	}
+	
+	public Matrix(int[][] data) {
+		this(data.length, data[0].length);
+		
+		for (int r = 0; r < rows; r++)
+			for (int c = 0; c < columns; c++)
+				this.matrix.setEntry(r, c, (double) data[r][c]);
+	}
 
 	public Matrix(int[] sizes) {
 		this(sizes[0], sizes[1]);
@@ -72,6 +80,18 @@ public class Matrix implements Iterable<Double> {
 	
 	public boolean isScalar() {
 		return rows == 1 && columns == 1;
+	}
+	
+	public boolean isSquare() {
+		return rows == columns;
+	}
+	
+	public boolean isRow() {
+		return rows == 1;
+	}
+	
+	public boolean isColumn() {
+		return columns == 1;
 	}
 
 	public Matrix copy() {
@@ -144,10 +164,41 @@ public class Matrix implements Iterable<Double> {
 	public Matrix power(int p) {
 		return new Matrix(this.matrix.power(p));
 	}
+	
+	public Matrix flatRow() {
+		Matrix result = new Matrix(1, rows * columns);
+		int index = 0;
+		
+		for (double elem : this)
+			result.set(0, index++, elem);
+		
+		return result;
+	}
+	
+	public Matrix flatColumn() {
+		Matrix result = new Matrix(rows * columns, 1);
+		int index = 0;
+		
+		for (double elem : this)
+			result.set(index++, 0, elem);
+		
+		return result;
+	}
 
 	public Matrix transpose() {
 		return new Matrix(this.matrix.transpose());
 	}
+	
+	public Matrix negative() {
+		return applyOnEach(x -> -x);
+	}
+	
+	public Matrix scale() {
+		final double max = max();
+		final double min = min();
+		return applyOnEach(x -> (x - min) / (max - min));
+	}
+	
 
 	public double trace() {
 		return this.matrix.getTrace();
@@ -257,7 +308,7 @@ public class Matrix implements Iterable<Double> {
 		return result;
 	}
 	
-	public Matrix concatVerticaly(Matrix other) {
+	public Matrix concatV(Matrix other) {
 		
 		if (columns != other.columns)
 			throw new DimensionMismatchException(other.columns, columns);
@@ -275,7 +326,7 @@ public class Matrix implements Iterable<Double> {
 		return result;
 	}
 	
-	public Matrix concatHorizontaly(Matrix other) {
+	public Matrix concatH(Matrix other) {
 		
 		if (rows != other.rows)
 			throw new DimensionMismatchException(other.rows, rows);
@@ -406,13 +457,19 @@ public class Matrix implements Iterable<Double> {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
 		Matrix other = (Matrix) obj;
-		if (matrix == null) if (other.matrix != null) return false; else if (!matrix.equals(other.matrix)) return false;
-		if (rows != other.rows) return false;
-		if (columns != other.columns) return false;
+		if (rows != other.rows)
+			return false;
+		if (columns != other.columns)
+			return false;
+		if (!Objects.deepEquals(matrix.getData(), other.matrix.getData()))
+			return false;
 		return true;
 	}
 
@@ -420,14 +477,29 @@ public class Matrix implements Iterable<Double> {
 	public String toString() {
 
 		StringBuilder builder = new StringBuilder();
-
+		final int limitedRows = rows > 10 ? 10 : rows;
+		final int limitedColumns = columns > 10 ? 10 : columns;
+		
 		builder.append("[" + rows + ";" + columns + "]\n");
-		for (int r = 0; r < rows; r++) {
-			for (int c = 0; c < columns; c++) {
-				builder.append('\t');
+		for (int r = 0; r < limitedRows; r++) {
+			builder.append('\t');
+			for (int c = 0; c < limitedColumns; c++) {
+				
 				builder.append(matrix.getEntry(r, c));
 				builder.append('\t');
 			}
+			builder.append(limitedColumns < columns ? " ...\n" : '\n');
+		}
+		if (limitedRows < rows) {
+			builder.append("\t");
+			for (int c = 0; c < limitedColumns; c++)
+				builder.append(".\t");
+			builder.append("\n\t");
+			for (int c = 0; c < limitedColumns; c++)
+				builder.append(".\t");
+			builder.append("\n\t");
+			for (int c = 0; c < limitedColumns; c++)
+				builder.append(".\t");
 			builder.append('\n');
 		}
 		return builder.toString();
@@ -454,7 +526,7 @@ public class Matrix implements Iterable<Double> {
 	}
 	
 	public static final Matrix sum(Matrix m) {
-		return m.rows == 1 ? sumByRow(m) : sumByColumn(m);
+		return m.isRow() ? sumByRow(m) : sumByColumn(m);
 	}
 	
 	public static final Matrix sumByColumn(Matrix m) {
@@ -479,6 +551,20 @@ public class Matrix implements Iterable<Double> {
 	
 	public static final Matrix log(Matrix m) {
 		return m.applyOnEach(d -> Math.log(d));
+	}
+	
+	public static final Matrix binaryMatrix(Matrix rowIntegerMatrix, int numValues) {
+		
+		if (!rowIntegerMatrix.isRow()) 
+			throw new DimensionMismatchException(rowIntegerMatrix.rows, 1);
+		
+		Matrix result = new Matrix(numValues, rowIntegerMatrix.columns);
+		
+		for (int r = 0; r < numValues; r++)
+			for (int c = 0; c < rowIntegerMatrix.columns; c++)
+				result.set(r, c, r == rowIntegerMatrix.get(0, c) ? 1d : 0d);
+		
+		return result;
 	}
 	
 	private static final int indexMax(double[] array) {

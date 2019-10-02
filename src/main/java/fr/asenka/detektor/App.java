@@ -9,12 +9,17 @@ public class App {
 
 	public static void main(String[] args) {
 
-		Matrix m = new Matrix("1 1 1 ; 1 1 1 ; 1 1 1");
-		Matrix p = new Matrix("1 ; 2 ; 3");
+		DataSet trainingData = new DataSet("src/main/resources/train-images-idx3-ubyte.gz",
+				"src/main/resources/train-labels-idx1-ubyte.gz");
+
+		Matrix X = trainingData.getVectorizedImages().scale();
+		Matrix y = trainingData.getVectorizedLabels().transpose();
+
+		NeuralNetwork nn = new NeuralNetwork(28 * 28, 10, 25);
 		
-		System.out.println(m);
+		Matrix p = nn.predict(X);
+		
+		System.out.println(y);
 		System.out.println(p);
-		System.out.println(Matrix.zeros(3, 1).concatHorizontaly(m).concatHorizontaly(p));
-		
 	}
 }

@@ -5,9 +5,8 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.math3.linear.MatrixUtils;
-import org.apache.commons.math3.linear.RealMatrix;
 
+import fr.asenka.detektor.util.Matrix;
 import fr.asenka.detektor.util.MnistReader;
 
 public class DataSet {
@@ -22,8 +21,6 @@ public class DataSet {
 	
 	private List<int[][]> images;
 	
-	private int numClasses;
-	
 	private int imageHeight;
 	
 	private int imageWidth;
@@ -33,10 +30,9 @@ public class DataSet {
 	 * @param imagesFilePath
 	 * @param labelsFilePath
 	 */
-	public DataSet(String imagesFilePath, String labelsFilePath, int numClasses) {
+	public DataSet(String imagesFilePath, String labelsFilePath) {
 		this.imagesFilePath = imagesFilePath;
 		this.labelsFilePath = labelsFilePath;
-		this.numClasses = numClasses;
 		this.initialize();
 	}
 	
@@ -65,28 +61,10 @@ public class DataSet {
 			size = labels.length;
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
 	public int size() {
 		return size;
 	}
 	
-	/**
-	 * 
-	 * @param index
-	 * @return
-	 */
-	public int[][] getImage(int index) {
-		return this.images.get(index);
-	}
-	
-	/**
-	 * 
-	 * @param index
-	 * @return
-	 */
 	public int getLabel(int index) {
 		return this.labels[index];
 	}
@@ -94,116 +72,32 @@ public class DataSet {
 	public int[] getLabels() {
 		return labels;
 	}
-	
-	/**
-	 * 
-	 * @param index
-	 * @return
-	 */
-	public RealMatrix getVectorizedLabel(int index) {
-		
-		double[] values = new double[numClasses];
-		
-		for (int k = 0; k < numClasses; k++)
-			values[k] = k == labels[index] ? 1d : 0d;
-		
-		return MatrixUtils.createColumnRealMatrix(values);
+
+	public Matrix getImage(int index) {
+		return new Matrix(this.images.get(index));
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public RealMatrix getVectorizedLabels() {
-		
-		double[][] values = new double[size][numClasses];
-		
-		for (int index = 0; index < size; index++)
-			for(int k = 0; k < numClasses; k++)
-				values[index][k] = k == labels[index] ? 1d : 0d;
-		
-		return MatrixUtils.createRealMatrix(values);
+	public Matrix getVectorizedImage(int index) {
+		return getImage(index).flatRow();
 	}
 	
-	/**
-	 * 
-	 * @param index
-	 * @return
-	 */
-	public RealMatrix getVectorizedImage(int index) {
-		int[][] image = images.get(index);
-		double[] values = flat(image);
-		return MatrixUtils.createColumnRealMatrix(values);
+	public Matrix getVectorizedImages() {
+		
+		Matrix result = new Matrix(size, imageHeight * imageWidth);
+		
+		for (int i = 0; i < size; i++)
+			result.setRow(i, new Matrix(images.get(i)).flatRow());
+		
+		return result;
 	}
 	
-	/**
-	 * 
-	 * @param index
-	 * @return
-	 */
-	public RealMatrix getScaledAndVectorizedImage(int index) {
+	public Matrix getVectorizedLabels() {
 		
-		int[][] image = images.get(index);
-		double[] values = scale(flat(image));
-		return MatrixUtils.createColumnRealMatrix(values);
-	}
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public RealMatrix getVectorizedImages() {
+		Matrix result = new Matrix(size, 1);
 		
-		double[][] values = new double[images.size()][];
+		for (int i = 0; i < size; i++)
+			result.set(i, 0, labels[i]);
 		
-		for (int i = 0; i < images.size(); i++)
-			values[i] = flat(images.get(i));
-		
-		return MatrixUtils.createRealMatrix(values);
-	}
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public RealMatrix getScaledAndVectorizedImages() {
-		
-		double[][] values = new double[images.size()][];
-		
-		for (int i = 0; i < images.size(); i++)
-			values[i] = scale(flat(images.get(i)));
-		
-		return MatrixUtils.createRealMatrix(values);
-	}
-	
-	/**
-	 * 
-	 * @param image
-	 * @return
-	 */
-	private double[] flat(int[][] image) {
-		
-		double[] flatImage = new double[imageWidth * imageHeight];
-		
-		for (int i = 0; i < image.length; i++)
-			for (int j = 0; j < image[i].length; j++) 
-				flatImage[imageWidth * i + j] = (double) image[i][j];
-			
-		return flatImage;
-	}
-	
-	/**
-	 * 
-	 * @param image
-	 * @return
-	 */
-	private double[] scale(double[] image) {
-		
-		double[] scaledImage = new double[imageWidth * imageHeight];
-		
-		for (int i = 0; i < image.length; i++)
-			scaledImage[i] = image[i] / 255d; // x[i] = (x[i] - min(x)) / (max(x) - min(x))
-		
-		return scaledImage;
+		return result;
 	}
 }
