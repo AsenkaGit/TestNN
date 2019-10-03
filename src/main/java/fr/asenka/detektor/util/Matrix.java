@@ -2,10 +2,12 @@ package fr.asenka.detektor.util;
 
 import static org.apache.commons.math3.linear.MatrixUtils.createRealMatrix;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -193,7 +195,7 @@ public class Matrix implements Iterable<Double> {
 		return applyOnEach(x -> -x);
 	}
 	
-	public Matrix scale() {
+	public Matrix normalize() {
 		final double max = max();
 		final double min = min();
 		return applyOnEach(x -> (x - min) / (max - min));
@@ -344,11 +346,19 @@ public class Matrix implements Iterable<Double> {
 		return result;
 	}
 	
-	public Matrix getSubMatrix(int startRow, int startColumn) {
+	public Matrix rows(int startRow, int endRow) {
+		return new Matrix(this.matrix.getSubMatrix(startRow, endRow, 0, columns - 1));
+	}
+	
+	public Matrix columns(int startColumn, int endColumn) {
+		return new Matrix(this.matrix.getSubMatrix(0, rows - 1, startColumn, endColumn));
+	}
+	
+	public Matrix subMatrix(int startRow, int startColumn) {
 		return new Matrix(this.matrix.getSubMatrix(startRow, rows - 1, startColumn, columns - 1));
 	}
 	
-	public Matrix getSubMatrix(int startRow, int endRow, int startColumn, int endColumn) {
+	public Matrix subMatrix(int startRow, int endRow, int startColumn, int endColumn) {
 		return new Matrix(this.matrix.getSubMatrix(startRow, endRow, startColumn, endColumn));
 	}
 	
@@ -401,7 +411,7 @@ public class Matrix implements Iterable<Double> {
 	}
 	
 	public Stream<Double> stream() {
-		return StreamSupport.stream(Spliterators.spliterator(iterator(), size(), 0), false);
+		return StreamSupport.stream(spliterator(), false);
 	}
 	
 	public void forEachRow(Consumer<Matrix> action) {
@@ -431,7 +441,7 @@ public class Matrix implements Iterable<Double> {
 	public Iterator<Double> iterator() {
 		return new Iterator<Double>() {
 
-			private long index = 0l;
+			private int index = 0;
 			
 			@Override
 			public boolean hasNext() {
@@ -440,7 +450,7 @@ public class Matrix implements Iterable<Double> {
 
 			@Override
 			public Double next() { 
-				return matrix.getEntry((int) (index / columns), (int) (index++ % columns));
+				return matrix.getEntry(index / columns, index++ % columns);
 			}
 		};
 	}
@@ -477,6 +487,11 @@ public class Matrix implements Iterable<Double> {
 	public String toString() {
 
 		StringBuilder builder = new StringBuilder();
+		NumberFormat f = NumberFormat.getInstance(Locale.getDefault());
+		if (f instanceof DecimalFormat) {
+			f.setMaximumFractionDigits(8);
+			f.setMinimumFractionDigits(8);
+		}
 		final int limitedRows = rows > 10 ? 10 : rows;
 		final int limitedColumns = columns > 10 ? 10 : columns;
 		
@@ -484,23 +499,15 @@ public class Matrix implements Iterable<Double> {
 		for (int r = 0; r < limitedRows; r++) {
 			builder.append('\t');
 			for (int c = 0; c < limitedColumns; c++) {
-				
-				builder.append(matrix.getEntry(r, c));
+				builder.append(f.format((matrix.getEntry(r, c))));
 				builder.append('\t');
 			}
 			builder.append(limitedColumns < columns ? " ...\n" : '\n');
 		}
 		if (limitedRows < rows) {
-			builder.append("\t");
-			for (int c = 0; c < limitedColumns; c++)
-				builder.append(".\t");
-			builder.append("\n\t");
-			for (int c = 0; c < limitedColumns; c++)
-				builder.append(".\t");
-			builder.append("\n\t");
-			for (int c = 0; c < limitedColumns; c++)
-				builder.append(".\t");
-			builder.append('\n');
+			builder.append("\t.\n");
+			builder.append("\t.\n");
+			builder.append("\t.\n");
 		}
 		return builder.toString();
 	}
@@ -547,6 +554,14 @@ public class Matrix implements Iterable<Double> {
 			result.set(r, 0, StatUtils.sum(m.matrix.getRow(r)));
 		
 		return result;
+	}
+	
+	public static final double sumAll(Matrix m) {
+		
+		double sum = 0;
+		for (double elem : m)
+			sum += elem;
+		return sum;
 	}
 	
 	public static final Matrix log(Matrix m) {

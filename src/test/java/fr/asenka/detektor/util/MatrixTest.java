@@ -153,7 +153,7 @@ class MatrixTest {
 		Matrix m = new Matrix("1 2 3 4 5 ; 1 2 3 4 5 ; 1 2 3 4 5 ; 1 2 3 4 5");
 		Matrix expected = new Matrix("2 3 4 5 ; 2 3 4 5 ; 2 3 4 5");
 
-		assertEquals(expected, m.getSubMatrix(1, 1));
+		assertEquals(expected, m.subMatrix(1, 1));
 	}
 	
 	@Test
