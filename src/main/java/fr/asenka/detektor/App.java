@@ -1,22 +1,40 @@
 package fr.asenka.detektor;
 
+import java.io.IOException;
+
+import javax.swing.JFrame;
+
+import org.math.plot.Plot2DPanel;
+
+import fr.asenka.detektor.util.MatLabDataSet;
 import fr.asenka.detektor.util.Matrix;
 
 public class App {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
-		DataSet trainingData = new DataSet("src/main/resources/train-images-idx3-ubyte.gz",
-				"src/main/resources/train-labels-idx1-ubyte.gz");
+		MatLabDataSet ds = new MatLabDataSet();
+		Matrix X = ds.getImages();
+		Matrix y = ds.getLabels();
 
-		Matrix X = trainingData.getVectorizedImages().normalize();
-		Matrix y = trainingData.getVectorizedLabels();
-
-		NeuralNetwork nn = new NeuralNetwork(28 * 28, 10, 25, X, y);
-		nn.train();
-		Matrix p = nn.predict(X);
+//		System.out.println("Training model...");
+//		NeuralNetwork nn = new NeuralNetwork(20 * 20, 10, 30, X, y);
+//		double[] history = nn.train(200);
+//		
+		Plot2DPanel plot = new Plot2DPanel();
+//		plot.addLinePlot("Cost", history);
+		plot.addBoxPlot("Image", Matrix.reshape(X.getRow(0), 20, 20).getRawData());
 		
-		System.out.println(y.rows(10, 20).transpose());
-		System.out.println(p.rows(10, 20).transpose());
+		
+		JFrame frame = new JFrame("Final X-Y Data");
+        frame.setContentPane(plot);
+        frame.setSize(600, 600);
+        frame.setVisible(true);
+		
+//		Matrix p = NeuralNetwork.predict(X, nn.getTheta1(), nn.getTheta2());
+//		
+//		System.out.println("Correct predictions : " + NeuralNetwork.countCorrectPredictions(p, y) + "/" + p.rows());
+		
+//		MatLabDataSet.saveWeights(nn.getTheta1(), nn.getTheta2());
 	}
 }

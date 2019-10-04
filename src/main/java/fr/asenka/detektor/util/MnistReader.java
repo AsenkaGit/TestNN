@@ -10,19 +10,8 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.nio.ByteBuffer;
 
-/**
- * 
- * @author rb53d22n
- *
- */
 public final class MnistReader {
 
-	/**
-	 * 
-	 * @param labelsFile
-	 * @return
-	 * @throws IOException
-	 */
 	public static final int[] getLabels(Path labelsFile) throws IOException {
 		
 		ByteBuffer buffer = ByteBuffer.wrap(decompressGzip(Files.readAllBytes(labelsFile)));
@@ -39,12 +28,6 @@ public final class MnistReader {
 		return labels;
 	}
 	
-	/**
-	 * 
-	 * @param imagesFile
-	 * @return
-	 * @throws IOException
-	 */
 	public static final List<int[][]> getImages(Path imagesFile) throws IOException {
 		
 		ByteBuffer buffer = ByteBuffer.wrap(decompressGzip(Files.readAllBytes(imagesFile)));
@@ -71,41 +54,7 @@ public final class MnistReader {
 		}
 		return images;
 	}
-	
-	/**
-	 * 
-	 * @param image
-	 * @return
-	 */
-	public static final String toString(final int[][] image) {
-		
-		final StringBuilder builder = new StringBuilder();
-		final int threshold1 = 256 / 3;
-		final int threshold2 = 2 * threshold1;
 
-		for (int[] row : image) {
-			builder.append("|");
-			for (int pixel : row) 
-				if (pixel == 0) 
-					builder.append("  ");
-				else if (pixel < threshold1) 
-					builder.append("..");
-				else  if (pixel < threshold2) 
-					builder.append("xx");
-				else 
-					builder.append("XX");
-			
-			builder.append("|\n");
-		}
-		return builder.toString();
-	}
-
-	/**
-	 * 
-	 * @param gzipData
-	 * @return
-	 * @throws IOException
-	 */
 	private static final byte[] decompressGzip(final byte[] gzipData) throws IOException {
 		
 		try(ByteArrayInputStream stream = new ByteArrayInputStream(gzipData); 

@@ -11,10 +11,10 @@ import java.util.function.Function;
 import fr.asenka.detektor.util.Matrix;
 
 public class NeuralNetwork {
-
-	private static final double LAMBDA = 2d;
 	
-	private static final double ALPHA = 1d;
+	private static final double LAMBDA = 1d;
+	
+	private static final double ALPHA = 2.5d;
 
 	private static final Function<Double, Double> SIGMOID = z -> 1d / (1d + Math.exp(-z));
 
@@ -55,48 +55,36 @@ public class NeuralNetwork {
 		
 		this.X = data;
 		this.Y = binaryMatrix(labels.transpose(), k).transpose();
+		initializeWeights();
 	}
 	
-	public Matrix predict(Matrix data) {
-		
-		Matrix Z2, Z3;
-		Matrix ones = Matrix.ones(X.rows(), 1);
+	public double[] train(int iterations) {
 
-		A1 = ones.concatH(X);
-		Z2 = A1.multiply(theta1.transpose());
-		A2 = ones.concatH(Z2.applyOnEach(SIGMOID));
-		Z3 = A2.multiply(theta2.transpose());
-		A3 = Z3.applyOnEach(SIGMOID); 
-		
-		return A3.indexMaxByRow();
-	}
-
-	public void train() {
-		
-		double costRegularized;
-		
-		initializeWeights();
+		double[] costHistory = new double[iterations + 1];
 		feedForward();
-		costRegularized = cost(H, Y, m) + regularization(m, theta1, theta2);
-		System.out.println("cost = " + costRegularized);
+		costHistory[0] = cost(H, Y, m) + regularization(m, theta1, theta2);
 		
-		
-		for (int i = 0; i < 10; i++) {
-			
+		for(int i = 1; i <= iterations; i++) {
 			backPropagation();
 			gradientDescent();
 			feedForward();
-			costRegularized = cost(H, Y, m) + regularization(m, theta1, theta2);
-			System.out.println("cost = " + costRegularized);
+			costHistory[i] = cost(H, Y, m) + regularization(m, theta1, theta2);
+			System.out.println("[" + i + "] cost = " + costHistory[i]);
 		}
+		return costHistory;
 	}
-	
+
+	public Matrix getTheta1() {
+		return theta1;
+	}
+
+	public Matrix getTheta2() {
+		return theta2;
+	}
+
 	private void initializeWeights() {
-		double epsilon1 = Math.sqrt(6) / Math.sqrt(h + n + 1);
-		double epsilon2 = Math.sqrt(6) / Math.sqrt(k + h + 1);
-		
-		this.theta1 = Matrix.random(h, n + 1, -epsilon1, epsilon1);
-		this.theta2 = Matrix.random(k, h + 1, -epsilon2, epsilon2);
+		this.theta1 = Matrix.random(h, n + 1, -0.5, 0.5);
+		this.theta2 = Matrix.random(k, h + 1, -0.5, 0.5);
 	}
 
 	private void feedForward() {
@@ -109,7 +97,7 @@ public class NeuralNetwork {
 		A2 = ones.concatH(Z2.applyOnEach(SIGMOID));
 		Z3 = A2.multiply(theta2.transpose());
 		A3 = Z3.applyOnEach(SIGMOID); 
-		H = A3;
+		H = A3.copy();
 	}
 	
 	private void backPropagation() {
@@ -144,23 +132,47 @@ public class NeuralNetwork {
 	}
 	
 	private void gradientDescent() {
-		
-		theta1 = updateTheta(theta1, gradientTheta1, m);
-		theta2 = updateTheta(theta2, gradientTheta2, m);
+		updateWeigths(theta1, gradientTheta1);
+		updateWeigths(theta2, gradientTheta2);
 	}
 	
-	private static final Matrix updateTheta(Matrix theta, Matrix gradientTheta, int m) {
+	private void updateWeigths(Matrix weights, Matrix derivWeights) {
 		
-		int rows = theta.rows();
-		int columns = theta.columns();
+		int rows = weights.rows();
+		int columns = weights.columns();
 		
-		Matrix result = new Matrix(theta.rows(), theta.columns());
-		
-		for (int r = 0; r < rows; r++)
-			for (int c = 0; c < columns; c++) 
-				result.set(r, c, theta.get(r, c) - ALPHA * gradientTheta.get(r, c) + ((LAMBDA / m) * theta.get(r, c) )); 
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < columns; c++) {
+					double theta = weights.get(r, c);
+					double derivTheta = derivWeights.get(r, c);
+					weights.set(r, c,  theta - ALPHA * derivTheta  + (LAMBDA / m) * theta) ;
+			}
+		}
+	}
 
-		return result;
+	public static final Matrix predict(Matrix X, Matrix theta1, Matrix theta2) {
+		
+		Matrix Z2, Z3, A1, A2, A3;
+		Matrix ones = Matrix.ones(X.rows(), 1);
+	
+		A1 = ones.concatH(X);
+		Z2 = A1.multiply(theta1.transpose());
+		A2 = ones.concatH(Z2.applyOnEach(SIGMOID));
+		Z3 = A2.multiply(theta2.transpose());
+		A3 = Z3.applyOnEach(SIGMOID); 
+		
+		return A3.indexMaxByRow();
+	}
+	
+	public static final int countCorrectPredictions(Matrix predictions, Matrix labels) {
+		
+		int size = predictions.rows();
+		int correctPredictions = 0;
+		
+		for (int i = 0; i < size; i++)
+			correctPredictions += labels.get(i, 0) != predictions.get(i, 0) ? 0 : 1;
+		
+		return correctPredictions;
 	}
 
 	private static final double regularization(int numExamples, Matrix theta1, Matrix theta2) {

@@ -582,6 +582,22 @@ public class Matrix implements Iterable<Double> {
 		return result;
 	}
 	
+	public static final Matrix reshape(Matrix rowMatrix, int rows, int columns) {
+		
+		Matrix result = new Matrix(rows, columns);
+		
+		for (int c = 0; c < rows * columns; c++)
+			result.set(c / columns, c % columns, rowMatrix.get(0, c));
+		
+		return result;
+	}
+	
+	public static void main(String[] args) {
+		Matrix m = new Matrix("1 2 3 4 5 6 7 8 9");
+		
+		System.out.println(reshape(m, 3, 3));
+	}
+	
 	private static final int indexMax(double[] array) {
 		double largest = array[0];
 		int index = 0;

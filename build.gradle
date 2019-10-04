@@ -5,13 +5,15 @@ plugins {
 }
 
 repositories {
-    jcenter()
-    //maven {url 'https://si-devops-mirror.edf.fr/repository/central.maven.org/'}
+    //jcenter()
+    maven {url 'https://si-devops-mirror.edf.fr/repository/central.maven.org/'}
 }
 
 dependencies {
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'org.apache.commons:commons-lang3:3.9'
+    implementation 'net.sourceforge.jmatio:jmatio:1.0'
+    implementation 'com.github.yannrichet:JMathPlot:1.0.1'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.5.2'
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.5.2'
