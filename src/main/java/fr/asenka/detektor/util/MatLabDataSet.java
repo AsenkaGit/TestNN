@@ -1,29 +1,27 @@
 package fr.asenka.detektor.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 import com.jmatio.io.MatFileReader;
-import com.jmatio.io.MatFileWriter;
-import com.jmatio.types.MLArray;
 import com.jmatio.types.MLDouble;
 
-public class MatLabDataSet {
+public class MatLabDataSet extends DataSet {
 	
-	private Matrix X;
-	
-	private Matrix y;
+	private static final int IMAGE_SIZE = 20 * 20;
 	
 	private Matrix theta1;
 	
 	private Matrix theta2;
 	
-	public MatLabDataSet() throws IOException {
+	@Override
+	protected void loadData() {
 
+		System.out.println("Loading MatLab data...");
+		
+		try {
 		MatFileReader dataReader = new MatFileReader("C:\\works\\tests\\neuralNetwork\\detektor\\src\\main\\resources\\ex4data1.mat");
-//		MatFileReader weightsReader = new MatFileReader("C:\\works\\tests\\neuralNetwork\\detektor\\src\\main\\resources\\ex4weights.mat");
-		MatFileReader weightsReader = new MatFileReader("C:\\works\\tests\\neuralNetwork\\detektor\\src\\main\\resources\\output.mat");
+		MatFileReader weightsReader = new MatFileReader("C:\\works\\tests\\neuralNetwork\\detektor\\src\\main\\resources\\ex4weights.mat");
+//		MatFileReader weightsReader = new MatFileReader("C:\\works\\tests\\neuralNetwork\\detektor\\src\\main\\resources\\output.mat");
 		
 		MLDouble ML_X = (MLDouble) dataReader.getMLArray("X");
 		MLDouble ML_y = (MLDouble) dataReader.getMLArray("y");
@@ -32,16 +30,20 @@ public class MatLabDataSet {
 		
 		X = new Matrix(ML_X.getArray());
 		y = new Matrix(ML_y.getArray()).subtract(1);
+		
+		System.out.println(X.rows() + " images loaded.");
+		
 		theta1 = new Matrix(ML_theta1.getArray());
 		theta2 = new Matrix(ML_theta2.getArray());
+		
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	public Matrix getImages() {
-		return X;
-	}
-
-	public Matrix getLabels() {
-		return y;
+	@Override
+	public int getImageSize() {
+		return IMAGE_SIZE;
 	}
 
 	public Matrix getTheta1() {
@@ -50,19 +52,5 @@ public class MatLabDataSet {
 
 	public Matrix getTheta2() {
 		return theta2;
-	}
-	
-	public static void saveWeights(Matrix theta1, Matrix theta2) throws IOException {
-		
-		MatFileWriter writer = new MatFileWriter();
-		
-		MLArray ML_theta1 = new MLDouble("Theta1", theta1.getRawData());
-		MLArray ML_theta2 = new MLDouble("Theta2", theta2.getRawData());
-		
-		Collection<MLArray> data = new ArrayList<>();
-		data.add(ML_theta1);
-		data.add(ML_theta2);
-		
-		writer.write("C:\\works\\tests\\neuralNetwork\\detektor\\src\\main\\resources\\output.mat", data);
 	}
 }
